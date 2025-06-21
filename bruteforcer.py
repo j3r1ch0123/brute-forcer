@@ -50,10 +50,7 @@ def main():
     parser.add_argument("--verbose", action="store_true", help="Enable status updates during brute force")
     
     args = parser.parse_args()
-    if args.help:
-        parser.print_help()
-        exit(0)
-
+    
     print(f"[*] Target URL: {args.url}")
     print(f"[*] Using email file: {args.email_file}")
     print(f"[*] Digits: {args.min_digits} to {args.max_digits}")
