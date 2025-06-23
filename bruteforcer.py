@@ -76,7 +76,7 @@ def main():
         futures = []
         for email in emails:
             for pin in generate_pins(args.min_digits, args.max_digits, args.charset):
-                futures.append(executor.submit(attack, args.url, email, pin, args.delay, args.verbose))
+                futures.append(executor.submit(attack, args.url, email, pin, args.delay, args.verbose, args.email_param, args.pin_param))
 
         for _ in as_completed(futures):
             pass  # Keeps the thread pool from exiting early
